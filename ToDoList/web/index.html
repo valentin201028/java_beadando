@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>ToDoList</title>
+        <meta charset="UTF-8">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script>
+                
+            function addTask(){
+                var task = "addTask";
+                var title = document.getElementById("nTitle").value;
+                var text = document.getElementById("nText").value;
+                var urgent = document.getElementById("nUrgent").checked;
+                var important = document.getElementById("nImportant").checked;
+                var startDate = document.getElementById("nStartDate").value;
+                var startTime = document.getElementById("nStartTime").value;
+                var endDate = document.getElementById("nEndDate").value;
+                var endTime = document.getElementById("nEndTime").value;
+                
+                document.getElementById("nTitle").value = "";
+                document.getElementById("nText").value = "";
+                
+                
+                var request = {"task":task,"title":title,"text":text,"urgent":urgent,"important":important,
+                    "startDate":startDate,"startTime":startTime,"endDate":endDate,"endTime":endTime};
+                $.ajax({
+                    url: "Controller",
+                    type: "POST",
+                    data: request,
+                    success: function(rd){
+                        if(rd.length !== 0){
+                            alert(rd);
+                        }
+                        else{
+                            alert("Sikeres hozzáadás!")
+                        }
+                    },
+                    error: function(rd){
+                        alert("hiba");
+                    }
+           
+                });
+            }
+            
+            function showTasks(){
+                var task = "showTasks";
+                
+                var request = {"task":task};
+                $.ajax({
+                    url: "Controller",
+                    type: "POST",
+                    data: request,
+                    success: function(rd){
+                        //alert(rd);
+                        /*
+                         * tasks id-jű div-be fogja pakolni az elemeket
+                         * Szétdarabolás példányok között, majd az egyes példányokkal
+                         * a showOneTask fv. foglalkozik.
+                         * 
+                         */
+                        document.getElementById("tasks").innerHTML = "";
+                        let one = rd.split("$");
+                        for(var i = 0; i < one.length-1; i++){
+                            showOneTask(one[i]);
+                        }
+                    },
+                    error: function(){
+                        alert("hiba");
+                    }
+           
+                });
+            }
+            
+            onload: function showOneTask(obj){
+                /*
+                 * Ide érkezik az egyes példány. Szét lesz darabolva, majd a tömb
+                 * elemeit írja ki a program.
+                 * Több reészre van szükség amiatt, hogy a sürgős és a fontos érték
+                 * az éppen látható-e vagy sem.
+                 */
+                var elements = obj.split("@");
+                
+                if(elements[7] === "false"){
+                    var a = `<div id="${elements[0]}" class="task">
+                                <div class="tPU">`;
+                    var b =         `<p class="tUrgent">Sürgős</p>`;
+                    var c =         `<p class="tImportant">Fontos</p>`;
+                    var d =     `</div>
+                            <p class="tTitle">${elements[1]}</p>
+                            <p class="tText">${elements[2]}</p>
+                            <p class="tTD">tervezett időpont:</p>
+                            <div class="tSE">
+                                <p class="tStart">${elements[5]} -től</p>
+                                <p class="tEnd">${elements[6]} -ig</p>
+                            </div>
+                            <button onclick="doneAndShow(this.id)" id = "${elements[0]}" class="done">KÉSZ</button>            
+                             </div>`;
+                    if(elements[3] === "true" && elements[4]=== "true"){
+                        var task = a + b + c + d;
+                    }
+                    else if(elements[3] === "true" && elements[4] === "false"){
+                        var task = a + b + d;
+                    }
+                    else if(elements[3] === "false" && elements[4] === "true"){
+                        var task = a + c + d;
+                    }
+                    else{
+                        var task = a + d;
+                    }
+                    document.getElementById("tasks").innerHTML += task;
+                }
+            }
+            
+           
+            function setDone(id){
+                var task = "setDone";
+                var ID = id;
+                var request = {"task":task,"ID":ID};
+                $.ajax({
+                    url: "Controller",
+                    type: "POST",
+                    data: request,
+                    success: function(rd){
+                        //alert(rd);
+                    },
+                    error: function(){
+                        alert("hiba");
+                    }
+           
+                });
+            }
+            
+            function doneAndShow(id){
+                if(confirm("Ha biztosan kész vagy vele, kattints az OK-ra")){
+                    setDone(id);
+                }
+                location.reload();
+                showTasks();
+            }
+            
+            function addAndShow(){
+                addTask();
+                showTasks();
+            }
+            
+        </script>
+    </head>
+    <body>
+        <main>
+            <div>
+                <p class="dTitle">Új feladat hozzáadása<p>
+
+                <div>
+                    <p class="nArg">Cím:</p>
+                    <input id="nTitle">
+                    <p class="nArg">Leírás:</p>
+                    <textarea id="nText"></textarea>
+                    <p class="chb"><input type="checkbox" id="nUrgent"> sürgős</p>
+                    
+                    <p class="chb"><input type="checkbox" id="nImportant"> fontos</p>
+                    
+                    <p class="nArg">Kezdés ideje:</p>
+                    <div class="datetime">
+                        <input type="date" id="nStartDate">
+                        <input type="time" id="nStartTime">
+                    </div>
+                    <p class="nArg">Befejezés ideje:</p>
+                    <div  class="datetime">
+                        <input type="date" id="nEndDate">
+                        <input type="time" id="nEndTime">
+                    </div>
+                    
+                    <button onclick="addAndShow()"  id="btnAdd">Hozzáadás</button>
+                </div>
+            </div>
+            <div>
+                <p onclick="showTasks()" id="nAddTitle" class="dTitle">Meglévő feladatok<p>
+                <div id="tasks">
+                    </div>  
+                
+
+            </div>
+        </main>
+    </body>
+</html>
+<style>
+    .task{
+        margin: 30px;
+        margin-top: 0px;
+        border-radius: 20px; 
+        background: white;
+        box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.4), 0 8px 20px 0 rgba(0, 0, 0, 0.4);
+    }
+    
+    .tTitle{
+        text-align: center;
+        font-size: 110%;
+        margin:0;
+        color: black;
+        font-weight: bold;
+        font-family: sans-serif;
+    }
+    
+    .tText{
+        color: white;
+        border: 1px solid black;
+        margin: 10px;
+        padding: 5px;
+        background: gray;
+        border-radius: 5px;
+        font-family: sans-serif;
+    }
+    
+    .tPU{
+        margin-left: 35px;
+        box-sizing: border-box;
+        width: 300px;
+        height: 55px;
+    }
+    .tPU .tUrgent{
+        float: left;
+        width: 49%;
+        text-align: center;
+        font-weight: bold;
+        color: red;
+    }
+    .tPU .tImportant{
+        float: right;
+        width: 49%;
+        text-align: center;
+        font-weight: bold;
+        color: red;
+    }
+    
+    .tTD{
+        padding-left: 10px; 
+        font-weight: bolder;
+        font-family: sans-serif;
+    }
+    .tSE{
+        margin-left: 30px;
+        box-sizing: border-box;
+        width: 300px;
+        height: 10px;
+    }
+    .tSE .tStart{
+        padding-top: 0;
+        margin-top: 0;
+        float: left;
+        width: 49%;
+        text-align: center;
+        font-weight: normal;
+        color: orange;
+    }
+    .tSE .tEnd{
+        padding-top: 0;
+        margin-top: 0;
+        float: right;
+        width: 49%;
+        text-align: center;
+        font-weight: normal;
+        color: orange;
+    }
+    .done{
+        color: white;
+        background: red;
+        width: 80px;
+        height: 30px;
+        margin-bottom: 10px;
+        margin-left: 270px;
+        margin-right: 20px;
+        font-weight: bold;
+        border-radius: 10px;
+        border: 1px solid black;
+    }
+    #nAddTitle:hover{
+        cursor: pointer;
+        color: white;
+        text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+    }
+</style>
+
+
+<style>
+    main{
+        width: 430px;
+        margin: auto;
+        left: 1%;
+        right: 1%;
+        position: absolute;
+        background: yellow;
+        border: 3px solid black;
+    }
+    
+    .dTitle{
+        text-align: center;
+        padding: 15px;
+        margin: 0;
+        font-size: 150%;
+        font-weight: bold;
+        font-family: sans-serif;
+        color: black;
+    }
+    .nArg{
+        font-weight: 600;
+        font-family: sans-serif;
+        font-size: 120%;
+        padding-left: 20px;
+        padding-top: 15px; 
+        padding-bottom: 3px; 
+        margin: 0;
+    }
+    #nTitle{
+        margin-left: 10px;
+        width:400px;
+        font-size:11pt;
+    }
+    
+    #nText{
+        margin-left: 10px;
+        width:400px;
+        height: 70px;
+        font-size:11pt;
+        resize: vertical;
+
+    }
+    .datetime{
+        padding-top: 5px; 
+        text-align: center;
+    }
+    .chb{
+        font-family: sans-serif;
+        font-size: 120%;
+        padding-left: 20px;
+        padding-top: 10px; 
+        margin: 0;
+    }
+    
+    #btnAdd{
+        color: white;
+        background: black;
+        width: 120px;
+        height: 30px;
+        margin: 20px;
+        margin-bottom: 10px;
+        margin-left: 150px;
+        margin-right: 150px;
+        font-weight: bold;
+        border-radius: 10px;
+        border: 1px solid black;
+    }
+    #btnAdd:hover{
+        background: gray;
+        color: black;
+    }
+</style>
